@@ -9,6 +9,20 @@ const token = process.env.DISCORD_TOKEN;
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
+// EVENTS
+const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
+for (const file of eventFiles) {
+	const event = require(`./events/${file}`);
+
+	if (event.once) {
+		client.once(event.name, (...args) => event.execute(...args));
+	}
+	else {
+		client.on(event.name, (...args) => event.execute(...args));
+	}
+}
+
+// COMMANDS
 client.commands = new Collection();
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -18,11 +32,15 @@ for (const file of commandFiles) {
 	client.commands.set(command.data.name, command);
 }
 
-client.once('ready', () => {
-	console.log('Ready!');
+// SERVER ACTIVITIES
+
+client.once('ready', (c) => {
+	console.log(`Ready! Logged in as ${c.user.tag}!`);
 });
 
 client.on('interactionCreate', async interaction => {
+	console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered an interaction.`);
+
 	if (!interaction.isCommand()) return;
 
 	const command = client.commands.get(interaction.commandName);
